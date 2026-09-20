@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getDisplayUpcomingRaces, RaceEvent } from '../data/f1RacesData';
+import { RaceEvent } from '../data/f1RacesData';
 import { Calendar, MapPin, Clock, ChevronRight, Zap } from 'lucide-react';
 import { ScrollReveal } from './ScrollReveal';
 
 interface UpcomingRacesSectionProps {
+  upcomingRaces: RaceEvent[];
+  seasonYear?: number;
   onSelectRace: (race: RaceEvent) => void;
 }
 
@@ -58,10 +60,11 @@ const CountdownTimer: React.FC<{ targetIso: string }> = ({ targetIso }) => {
   );
 };
 
-export const UpcomingRacesSection: React.FC<UpcomingRacesSectionProps> = ({ onSelectRace }) => {
-  // Dynamically retrieve upcoming races (up to 10, or all remaining if fewer)
-  const upcomingRaces = getDisplayUpcomingRaces();
-
+export const UpcomingRacesSection: React.FC<UpcomingRacesSectionProps> = ({
+  upcomingRaces,
+  seasonYear = 2026,
+  onSelectRace,
+}) => {
   return (
     <section id="upcoming-races" className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-16 bg-transparent text-white border-t border-[#1a1d26] select-none">
       <div className="max-w-7xl mx-auto">
@@ -78,7 +81,7 @@ export const UpcomingRacesSection: React.FC<UpcomingRacesSectionProps> = ({ onSe
               UPCOMING <span className="text-[#e10600]">RACES</span>
             </h2>
             <p className="mt-3 text-xs sm:text-sm font-mono text-[#8e9aa8] max-w-2xl leading-relaxed uppercase">
-              The next scheduled Formula 1 Grands Prix on the 2026 World Championship calendar with live real-time race countdowns.
+              The next scheduled Formula 1 Grands Prix on the {seasonYear} World Championship calendar with live real-time race countdowns.
             </p>
           </div>
         </ScrollReveal>

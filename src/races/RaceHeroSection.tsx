@@ -1,17 +1,35 @@
 import React from 'react';
-import { getNextRace, F1_2026_DATA } from '../data/f1RacesData';
-import { ChevronDown, Calendar, Trophy, Zap, Flag } from 'lucide-react';
+import { RaceEvent, DriverStanding, ConstructorStanding } from '../data/f1RacesData';
+import { ChevronDown, Calendar, Trophy, Zap, Flag, RefreshCw, AlertTriangle, Activity } from 'lucide-react';
 import { ScrollReveal } from './ScrollReveal';
 
 interface RaceHeroSectionProps {
   onScrollToSection: (sectionId: string) => void;
+  seasonYear?: number;
+  nextRace?: RaceEvent;
+  leaderDriver?: DriverStanding;
+  leaderTeam?: ConstructorStanding;
+  completedRacesCount?: number;
+  totalRacesCount?: number;
+  lastUpdated?: string;
+  isLoading?: boolean;
+  isFallback?: boolean;
+  onRefresh?: () => void;
 }
 
-export const RaceHeroSection: React.FC<RaceHeroSectionProps> = ({ onScrollToSection }) => {
-  const nextRace = getNextRace();
-  const leaderDriver = F1_2026_DATA.driverStandings[0];
-  const leaderTeam = F1_2026_DATA.constructorStandings[0];
-
+export const RaceHeroSection: React.FC<RaceHeroSectionProps> = ({
+  onScrollToSection,
+  seasonYear = 2026,
+  nextRace,
+  leaderDriver,
+  leaderTeam,
+  completedRacesCount = 0,
+  totalRacesCount = 0,
+  lastUpdated,
+  isLoading = false,
+  isFallback = false,
+  onRefresh,
+}) => {
   return (
     <section className="relative w-full min-h-[85vh] flex flex-col justify-between pt-28 pb-16 px-6 sm:px-12 lg:px-16 bg-transparent text-white border-b border-[#1a1d26] select-none">
       {/* Background Subtle Gradient Vignette */}
@@ -19,13 +37,41 @@ export const RaceHeroSection: React.FC<RaceHeroSectionProps> = ({ onScrollToSect
 
       {/* Main Editorial Hero Block */}
       <div className="relative z-10 max-w-7xl mx-auto w-full my-auto text-left">
-        {/* Season Pill Badge */}
+        {/* Season Pill Badge & Live API / Fallback Status */}
         <ScrollReveal delayMs={0} variant="fade-up">
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#141822] border border-[#1f2430] mb-6">
-            <span className="w-2 h-2 rounded-full bg-[#e10600] animate-pulse" />
-            <span className="text-[10px] sm:text-xs font-mono tracking-[0.25em] text-[#e10600] font-bold uppercase">
-              2026 FIA FORMULA ONE WORLD CHAMPIONSHIP
-            </span>
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#141822] border border-[#1f2430]">
+              <span className="w-2 h-2 rounded-full bg-[#e10600] animate-pulse" />
+              <span className="text-[10px] sm:text-xs font-mono tracking-[0.25em] text-[#e10600] font-bold uppercase">
+                {seasonYear} FIA FORMULA ONE WORLD CHAMPIONSHIP
+              </span>
+            </div>
+
+            {/* Live API / Fallback Indicator Badge */}
+            {isLoading ? (
+              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-950/60 border border-blue-500/40 text-blue-400 text-[10px] font-mono tracking-widest uppercase">
+                <RefreshCw className="w-3 h-3 animate-spin text-blue-400" />
+                <span>CONNECTING TO JOLPICA F1 API...</span>
+              </div>
+            ) : isFallback ? (
+              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-500/60 text-amber-300 text-[10px] font-mono tracking-widest uppercase shadow-lg">
+                <AlertTriangle className="w-3 h-3 text-amber-400" />
+                <span className="font-bold">OFFLINE FALLBACK DATA ACTIVE</span>
+                {onRefresh && (
+                  <button
+                    onClick={onRefresh}
+                    className="ml-1 underline hover:text-white transition-colors cursor-pointer"
+                  >
+                    RETRY
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-[10px] font-mono tracking-widest uppercase">
+                <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
+                <span>LIVE API CONNECTED (JOLPICA F1)</span>
+              </div>
+            )}
           </div>
         </ScrollReveal>
 
@@ -40,7 +86,7 @@ export const RaceHeroSection: React.FC<RaceHeroSectionProps> = ({ onScrollToSect
         <ScrollReveal delayMs={300} variant="fade-up">
           <p className="mt-6 text-sm sm:text-lg font-mono text-[#8e9aa8] max-w-3xl leading-relaxed uppercase">
             Tracking the latest completed Grands Prix, official results, upcoming calendar countdowns,
-            and the live 2026 World Drivers' and Constructors' Championship standings.
+            and live {seasonYear} World Drivers' and Constructors' Championship standings from the Jolpica F1 API.
           </p>
         </ScrollReveal>
 
@@ -54,10 +100,10 @@ export const RaceHeroSection: React.FC<RaceHeroSectionProps> = ({ onScrollToSect
                 <span>Next Grand Prix</span>
               </div>
               <div className="text-sm sm:text-base font-bold font-display text-white mt-1 uppercase truncate">
-                {nextRace ? nextRace.name : 'TBD'}
+                {nextRace ? nextRace.name : 'SEASON COMPLETE'}
               </div>
               <div className="text-[10px] font-mono text-[#e10600] mt-0.5">
-                {nextRace ? nextRace.dateDisplay : 'SEASON COMPLETE'}
+                {nextRace ? nextRace.dateDisplay : 'ALL RACES FINISHED'}
               </div>
             </div>
 
@@ -96,10 +142,10 @@ export const RaceHeroSection: React.FC<RaceHeroSectionProps> = ({ onScrollToSect
                 <span>Season Status</span>
               </div>
               <div className="text-sm sm:text-base font-bold font-display text-white mt-1 uppercase">
-                14 / 23 COMPLETED
+                {completedRacesCount} / {totalRacesCount} COMPLETED
               </div>
               <div className="text-[10px] font-mono text-[#8e9aa8] mt-0.5">
-                UPDATED {F1_2026_DATA.lastUpdated}
+                UPDATED {lastUpdated || 'LIVE'}
               </div>
             </div>
           </div>

@@ -1,15 +1,19 @@
 import React from 'react';
-import { getRecentRaces, RaceEvent } from '../data/f1RacesData';
+import { RaceEvent } from '../data/f1RacesData';
 import { Trophy, ChevronRight, MapPin, Calendar } from 'lucide-react';
 import { ScrollReveal } from './ScrollReveal';
 
 interface RecentRacesSectionProps {
+  recentRaces: RaceEvent[];
+  seasonYear?: number;
   onSelectRace: (race: RaceEvent) => void;
 }
 
-export const RecentRacesSection: React.FC<RecentRacesSectionProps> = ({ onSelectRace }) => {
-  // Dynamically retrieve the 10 most recent completed races
-  const recentRaces = getRecentRaces();
+export const RecentRacesSection: React.FC<RecentRacesSectionProps> = ({
+  recentRaces,
+  seasonYear = 2026,
+  onSelectRace,
+}) => {
 
   return (
     <section id="recent-races" className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-16 bg-transparent text-white border-t border-[#1a1d26] select-none">
@@ -27,7 +31,7 @@ export const RecentRacesSection: React.FC<RecentRacesSectionProps> = ({ onSelect
               RECENT <span className="text-[#e10600]">RACES</span>
             </h2>
             <p className="mt-3 text-xs sm:text-sm font-mono text-[#8e9aa8] max-w-2xl leading-relaxed uppercase">
-              The 10 most recently completed Formula 1 Grands Prix of the 2026 season. Click any Grand Prix card to open its detailed race dossier and podium breakdown.
+              The {recentRaces.length} most recently completed Formula 1 Grands Prix of the {seasonYear} season. Click any Grand Prix card to open its detailed race dossier and podium breakdown.
             </p>
           </div>
         </ScrollReveal>

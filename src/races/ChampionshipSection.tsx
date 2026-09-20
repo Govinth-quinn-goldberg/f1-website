@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
-import { F1_2026_DATA, DriverStanding, ConstructorStanding } from '../data/f1RacesData';
+import { DriverStanding, ConstructorStanding } from '../data/f1RacesData';
 import { Trophy, Shield } from 'lucide-react';
 import { ScrollReveal } from './ScrollReveal';
 
-export const ChampionshipSection: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'drivers' | 'constructors'>('drivers');
+interface ChampionshipSectionProps {
+  driverStandings: DriverStanding[];
+  constructorStandings: ConstructorStanding[];
+  seasonYear?: number;
+  completedRacesCount?: number;
+}
 
-  const { driverStandings, constructorStandings } = F1_2026_DATA;
+export const ChampionshipSection: React.FC<ChampionshipSectionProps> = ({
+  driverStandings,
+  constructorStandings,
+  seasonYear = 2026,
+  completedRacesCount,
+}) => {
+  const [activeTab, setActiveTab] = useState<'drivers' | 'constructors'>('drivers');
 
   return (
     <section id="championship" className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-16 bg-transparent text-white border-t border-[#1a1d26] select-none">
@@ -25,7 +35,7 @@ export const ChampionshipSection: React.FC = () => {
                 CHAMPIONSHIP <span className="text-[#e10600]">STANDINGS</span>
               </h2>
               <p className="mt-2 text-xs sm:text-sm font-mono text-[#8e9aa8] max-w-xl uppercase">
-                Full verified 2026 points standings after Round 14 (Madrid GP).
+                Official verified {seasonYear} points standings{completedRacesCount !== undefined ? ` after Round ${completedRacesCount}` : ''}.
               </p>
             </div>
 
