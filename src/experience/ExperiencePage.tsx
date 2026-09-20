@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { VRCanvasViewer } from './VRCanvasViewer';
-import { ChevronDown, ArrowUp } from 'lucide-react';
+import { JourneySection } from './JourneySection';
+import { ChevronDown } from 'lucide-react';
 
 interface ExperiencePageProps {
   onNavigateHome?: () => void;
@@ -115,23 +116,11 @@ export const ExperiencePage: React.FC<ExperiencePageProps> = () => {
         </div>
       </div>
 
-      {/* Epilogue Section */}
-      <section className="relative z-10 w-full py-20 px-6 sm:px-12 bg-[#07080a] border-t border-[#1a1d26] flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div>
-          <div className="text-xs font-mono text-[#525d70] uppercase">POV VIRTUAL EXPERIENCE</div>
-          <div className="text-sm font-mono font-bold text-white uppercase mt-0.5">
-            ENGINEERED FOR UNMATCHED IMMERSION
-          </div>
-        </div>
-
-        <button
-          onClick={handleReturnToTop}
-          className="flex items-center space-x-2 px-5 py-2.5 rounded bg-[#141822] hover:bg-[#e10600] text-white text-xs font-mono tracking-widest uppercase transition-all duration-200 border border-white/10 cursor-pointer"
-        >
-          <span>REPLAY EXPERIENCE</span>
-          <ArrowUp className="w-4 h-4" />
-        </button>
-      </section>
+      {/* 
+        NEW SCROLL-DRIVEN STORYTELLING SECTION: JOIN THE JOURNEY
+        Appended seamlessly after the opening 450vh VR helmet sequence
+      */}
+      <JourneySection />
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { LoaderState } from '../utils/imageLoader';
 
 interface LoadingScreenProps {
-  loaderState: LoaderState;
+  loaderState?: LoaderState | null;
   onEnter: () => void;
   isVisible: boolean;
 }
@@ -15,28 +15,33 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   const [displayProgress, setDisplayProgress] = useState<number>(0);
   const [fadeExit, setFadeExit] = useState<boolean>(false);
   const animationFrameRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number | null>(null);
   const completedRef = useRef<boolean>(false);
 
-  // Controlled 5-second cinematic loading sequence: progresses 0% -> 100%
+  // Safe fallback state if loaderState is temporarily undefined/uninitialized
+  const effectiveState = loaderState || {
+    loadedCount: 0,
+    totalCount: 1,
+    progress: 0,
+    isEssentialReady: false,
+    isFullyLoaded: false,
+  };
+
+  // Real loading sequence tracking progressive asset loader state
   useEffect(() => {
     if (!isVisible) return;
-
-    const DURATION = 5000; // Exactly 5.0 seconds
 
     const handleComplete = () => {
       if (completedRef.current) return;
       completedRef.current = true;
       setDisplayProgress(100);
 
-      // Brief hold at 100% before smooth fade transition into Hero
       const holdTimer = setTimeout(() => {
         setFadeExit(true);
-      }, 250);
+      }, 150);
 
       const exitTimer = setTimeout(() => {
         onEnter();
-      }, 950); // 250ms hold + 700ms fade duration
+      }, 650);
 
       return () => {
         clearTimeout(holdTimer);
@@ -44,45 +49,46 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       };
     };
 
-    const tick = (now: number) => {
-      if (startTimeRef.current === null) {
-        startTimeRef.current = now;
+    // Safety fallback: if essential assets fail to decode, force exit after 6s max
+    const safetyTimeout = setTimeout(() => {
+      if (!completedRef.current) {
+        handleComplete();
       }
+    }, 6000);
 
-      const elapsed = now - startTimeRef.current;
-      const progressRatio = Math.min(1, elapsed / DURATION);
-      const currentPercent = Math.min(100, Math.floor(progressRatio * 100));
+    const tick = () => {
+      // Direct progress target from progressive image loader
+      const isReady = Boolean(effectiveState.isEssentialReady);
+      const targetPercent = isReady
+        ? 100
+        : Math.max(5, Math.min(99, effectiveState.progress || 0));
 
-      setDisplayProgress(currentPercent);
+      setDisplayProgress((prev) => {
+        if (prev >= 100) return 100;
+        const diff = targetPercent - prev;
+        const step = Math.max(1, Math.ceil(diff * 0.18));
+        const next = Math.min(100, prev + step);
 
-      if (progressRatio < 1) {
-        animationFrameRef.current = requestAnimationFrame(tick);
-      } else {
-        // Animation reached 100% at ~5s mark
-        if (loaderState.isEssentialReady) {
+        if (next >= 100 && isReady) {
           handleComplete();
-        } else {
-          // If first hero frame still decoding, wait briefly (or fallback after 2s)
-          const fallbackTimeout = setTimeout(handleComplete, 2000);
-          const interval = setInterval(() => {
-            if (loaderState.isEssentialReady) {
-              clearInterval(interval);
-              clearTimeout(fallbackTimeout);
-              handleComplete();
-            }
-          }, 50);
         }
+        return next;
+      });
+
+      if (!completedRef.current) {
+        animationFrameRef.current = requestAnimationFrame(tick);
       }
     };
 
     animationFrameRef.current = requestAnimationFrame(tick);
 
     return () => {
+      clearTimeout(safetyTimeout);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isVisible, loaderState.isEssentialReady, onEnter]);
+  }, [isVisible, effectiveState.isEssentialReady, effectiveState.progress, onEnter]);
 
   if (!isVisible) return null;
 

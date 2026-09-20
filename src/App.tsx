@@ -116,6 +116,13 @@ export function App() {
 
   return (
     <div className="relative min-h-screen bg-[#07080a] text-white">
+      {/* Global F1 Loading Screen - Mounts immediately on boot */}
+      <LoadingScreen
+        loaderState={loaderState}
+        onEnter={() => setIsLoadingActive(false)}
+        isVisible={isLoadingActive}
+      />
+
       {/* Global Minimal Switcher: HOME | ROAD | RACES | EXPERIENCE */}
       <GlobalNav
         activePage={activePage}
@@ -133,13 +140,6 @@ export function App() {
         <RoadPage onNavigateHome={() => setActivePage('home')} />
       ) : (
         <>
-          {/* Loading Screen */}
-          <LoadingScreen
-            loaderState={loaderState}
-            onEnter={() => setIsLoadingActive(false)}
-            isVisible={isLoadingActive}
-          />
-
           {/* Minimal Vertical Side Navigation Rail - Exactly 6 sections on left edge */}
           <SideNavigation
             activeSectionId={currentSection.id}
