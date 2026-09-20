@@ -301,7 +301,7 @@ export const HISTORIC_CIRCUITS: CircuitDetailData[] = [
       ],
     },
     mapImage: '/f1/circuits/monaco_map.png',
-    heroImage: '/f1/circuits/monaco_hero.jpg',
+    heroImage: '/f1/circuits/monaco_hero.webp',
   },
   {
     id: 'monza',
@@ -441,7 +441,7 @@ export const HISTORIC_CIRCUITS: CircuitDetailData[] = [
       ],
     },
     mapImage: '/f1/circuits/monza_map.png',
-    heroImage: '/f1/circuits/monza_hero.jpg',
+    heroImage: '/f1/circuits/monza_hero.webp',
   },
   {
     id: 'spa',
@@ -590,6 +590,6 @@ export const HISTORIC_CIRCUITS: CircuitDetailData[] = [
       ],
     },
     mapImage: '/f1/circuits/spa_map.png',
-    heroImage: '/f1/circuits/spa_hero.jpg',
+    heroImage: '/f1/circuits/spa_hero.webp',
   },
 ];

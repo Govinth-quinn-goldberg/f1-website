@@ -33,16 +33,32 @@ function smoothstep(edge0: number, edge1: number, x: number): number {
   return t * t * (3 - 2 * t);
 }
 
-// Calculate the target tire zoom weight based on scroll progress
-function calculateTireZoomWeight(progress: number): number {
-  // Tire section active range: 0.16 to 0.35
-  if (progress < 0.16 || progress > 0.35) return 0;
-  // Peak zoom hold between 0.22 and 0.28
-  if (progress >= 0.22 && progress <= 0.28) return 1.0;
+// Calculate target technical inspection zoom weight across Position 2 (TIRE) and Position 3 (POWER UNIT)
+function calculateInspectionZoomWeight(progress: number): number {
+  // Zoom starts entering Position 2 (0.16) and completes zoom-out entering Position 4 (0.65)
+  if (progress < 0.16 || progress > 0.65) return 0;
+  // Hold maximum zoom continuously through Position 2 (TIRE) and Position 3 (POWER UNIT)
+  if (progress >= 0.22 && progress <= 0.55) return 1.0;
   if (progress < 0.22) {
     return smoothstep(0.16, 0.22, progress);
   } else {
-    return smoothstep(0.35, 0.28, progress);
+    return smoothstep(0.65, 0.55, progress);
+  }
+}
+
+// Calculate target front-view aero zoom weight around landmark frame 166 (Position 5 -> Position 6)
+function calculateFrontAeroZoomWeight(progress: number): number {
+  const pStart = 150 / 178;   // ~0.8427 (approaching front view frame 166)
+  const pPeakMin = 164 / 178; // ~0.9213
+  const pPeakMax = 168 / 178; // ~0.9438 (peak front-view zoom around frame 166)
+  const pEnd = 1.0;           // Position 6 landmark frame 178
+
+  if (progress < pStart || progress > pEnd) return 0;
+  if (progress >= pPeakMin && progress <= pPeakMax) return 1.0;
+  if (progress < pPeakMin) {
+    return smoothstep(pStart, pPeakMin, progress);
+  } else {
+    return smoothstep(pEnd, pPeakMax, progress);
   }
 }
 
@@ -58,6 +74,7 @@ export const F1CanvasViewer: React.FC<F1CanvasViewerProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const currentProgressRef = useRef<number>(targetProgressRef.current);
   const currentZoomWeightRef = useRef<number>(0);
+  const currentFrontZoomWeightRef = useRef<number>(0);
   const lastRenderedFrameRef = useRef<number>(-1);
   const animationFrameId = useRef<number | null>(null);
 
@@ -71,7 +88,7 @@ export const F1CanvasViewer: React.FC<F1CanvasViewerProps> = ({
   const startProgress = useRef<number>(0);
 
   // Renders exactly ONE single, sharp, clean frame at 100% full opacity (ZERO ghosting, ZERO alpha crossfade)
-  const drawFrame = useCallback((frameIdx: number, zoomWeight: number) => {
+  const drawFrame = useCallback((frameIdx: number, zoomWeight: number, frontZoomWeight: number = 0) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
@@ -97,16 +114,16 @@ export const F1CanvasViewer: React.FC<F1CanvasViewerProps> = ({
     const img = imageLoader.getImage(clampedIdx);
     if (!img) return;
 
-    // Calculate dynamic tire zoom matrix
-    const scale = 1.0 + zoomWeight * 0.42;
+    // Calculate dynamic zoom matrix (Sequence 1 inspection zoom + Sequence 2 front aero zoom)
+    const scale = 1.0 + zoomWeight * 0.42 + frontZoomWeight * 0.32;
     const stageCenterX = canvas.width / 2;
     const stageCenterY = canvas.height / 2;
 
-    // Tire center in frame (left rear wheel: 41.7% width, 56.2% height)
+    // Tire/rear technical center in frame (left rear area: 41.7% width, 56.2% height)
     const tireTargetX = b.x + 0.417 * b.width;
     const tireTargetY = b.y + 0.562 * b.height;
 
-    // Center the tire horizontally in the left-center viewing area
+    // Center the inspection focus horizontally in viewing area
     const panTargetX = (stageCenterX * 0.88 - tireTargetX);
     const panTargetY = (stageCenterY - tireTargetY);
     const panX = panTargetX * zoomWeight;
@@ -128,7 +145,7 @@ export const F1CanvasViewer: React.FC<F1CanvasViewerProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    if (zoomWeight > 0.0005) {
+    if (zoomWeight > 0.0005 || frontZoomWeight > 0.0005) {
       ctx.translate(stageCenterX + panX, stageCenterY + panY);
       ctx.scale(scale, scale);
       ctx.translate(-stageCenterX, -stageCenterY);
@@ -195,7 +212,7 @@ export const F1CanvasViewer: React.FC<F1CanvasViewerProps> = ({
     }
 
     const totalFrames = ROTATION_FRAMES.length - 1;
-    drawFrame(currentProgressRef.current * totalFrames, currentZoomWeightRef.current);
+    drawFrame(currentProgressRef.current * totalFrames, currentZoomWeightRef.current, currentFrontZoomWeightRef.current);
   }, [drawFrame, onBoundsChange]);
 
   useEffect(() => {
@@ -216,16 +233,24 @@ export const F1CanvasViewer: React.FC<F1CanvasViewerProps> = ({
       const current = currentProgressRef.current;
       const diff = target - current;
 
-      // Calculate target zoom weight from progress
-      const targetZoomWeight = isFreeRotate ? 0 : calculateTireZoomWeight(target);
-      const zoomDiff = targetZoomWeight - currentZoomWeightRef.current;
+      // Calculate target zoom weights for both independent sequences
+      const targetZoomWeight = isFreeRotate ? 0 : calculateInspectionZoomWeight(target);
+      const targetFrontZoomWeight = isFreeRotate ? 0 : calculateFrontAeroZoomWeight(target);
 
-      const needsUpdate = Math.abs(diff) > 0.00008 || Math.abs(zoomDiff) > 0.0005 || specialImageKey;
+      const zoomDiff = targetZoomWeight - currentZoomWeightRef.current;
+      const frontZoomDiff = targetFrontZoomWeight - currentFrontZoomWeightRef.current;
+
+      const needsUpdate =
+        Math.abs(diff) > 0.00008 ||
+        Math.abs(zoomDiff) > 0.0005 ||
+        Math.abs(frontZoomDiff) > 0.0005 ||
+        specialImageKey;
 
       if (needsUpdate) {
         // Smooth responsive progress approach: follows scroll naturally without lag or floatiness
         currentProgressRef.current += diff * 0.22;
         currentZoomWeightRef.current += zoomDiff * 0.16;
+        currentFrontZoomWeightRef.current += frontZoomDiff * 0.16;
 
         const totalFrames = ROTATION_FRAMES.length - 1;
         const floatFrame = currentProgressRef.current * totalFrames;
@@ -234,7 +259,7 @@ export const F1CanvasViewer: React.FC<F1CanvasViewerProps> = ({
         // Proactively prioritize upcoming frames in direction of scroll
         imageLoader.prioritizeAround(nearestInt);
 
-        drawFrame(nearestInt, currentZoomWeightRef.current);
+        drawFrame(nearestInt, currentZoomWeightRef.current, currentFrontZoomWeightRef.current);
       }
 
       animationFrameId.current = requestAnimationFrame(renderLoop);
